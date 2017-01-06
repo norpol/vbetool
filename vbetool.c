@@ -8,7 +8,11 @@ This program is released under the terms of the GNU General Public License,
 version 2
 */
 
-#include <pci/pci.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <pciaccess.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,19 +40,16 @@ version 2
 #define DPMS_STATE_OFF 0x0400
 #define DPMS_STATE_LOW 0x0800
 
-static struct pci_access *pacc;
-
 int vbetool_init (void) {
 	if (!LRMI_init()) {
 		fprintf(stderr, "Failed to initialise LRMI (Linux Real-Mode Interface).\n");
 		exit(1);
 	}
 	
+	ioperm(0, 1024, 1);
 	iopl(3);
 	
-	pacc = pci_alloc();
-	pacc->numeric_ids = 1;
-	pci_init(pacc);
+	pci_system_init();
 	return 0;
 }
 
@@ -117,13 +118,36 @@ int main(int argc, char *argv[])
 			void *rc;
 			int romfd = open (argv[2], O_RDWR);
 
-			munmap(0xc0000, 64*1024);
-			rc = mmap(0xc0000, 64*1024,
+			munmap((void *)0xc0000, 64*1024);
+			rc = mmap((void *)0xc0000, 64*1024,
 				  PROT_READ|PROT_WRITE|PROT_EXEC,
 				  MAP_FIXED|MAP_PRIVATE, romfd, 0);
 		}
 
-		return do_post();
+		return do_post(0);
+	} else if (!strcmp(argv[1], "bootpost")) {
+		int err = check_console();
+
+		if (err) {
+			return err;
+		}
+		return do_post(1);
+	} else if (!strcmp(argv[1], "udevpost")) {
+	
+#ifdef HAVE_PCI_DEVICE_VGAARB_INIT
+		int err = check_console();
+
+		if (err) {
+			return err;
+		}
+		if (argc < 3)
+			goto usage;
+		
+		return do_udev_post(argv[2]);
+#else
+		fprintf("no vga arb support built in\n");
+		return -1;
+#endif
 	} else if (!strcmp(argv[1], "vgastate")) {
 		if (!strcmp(argv[2], "on")) {
 			return enable_vga();
@@ -147,7 +171,7 @@ int main(int argc, char *argv[])
 	} else {
 	      usage:
 		fprintf(stderr,
-			"%s: Usage %s [[vbestate save|restore]|[vbemode set|get]|[vgamode]|[dpms on|off|standby|suspend|reduced]|[post [romfile]]|[vgastate on|off]|[vbefp panelid|panelsize|getbrightness|setbrightness|invert]]\n",
+			"%s: Usage %s [[vbestate save|restore]|[vbemode set|get]|[vgamode]|[dpms on|off|standby|suspend|reduced]|[post [romfile]]|[bootpost]|[udevpost pciid]|[vgastate on|off]|[vbefp panelid|panelsize|getbrightness|setbrightness|invert]]\n",
 			argv[0], argv[0]);
 		return 1;
 	}
@@ -218,27 +242,189 @@ int do_real_post(unsigned pci_device)
 	return error;
 }
 
-int do_post(void)
+#define MAX_ROMSIZE 64*1024
+void *rom_cseg;
+unsigned char romfile[MAX_ROMSIZE];
+
+int setup_rom_section(void)
 {
-	struct pci_dev *p;
-	unsigned int c;
+  munmap((void *)0xc0000, MAX_ROMSIZE);
+  rom_cseg = mmap((void *)0xc0000, MAX_ROMSIZE, PROT_READ|PROT_WRITE|PROT_EXEC,
+		  MAP_FIXED|MAP_ANONYMOUS|MAP_PRIVATE, -1, 0);
+  if (!rom_cseg) {
+    fprintf(stderr,"unable to setup fake rom\n");
+    return -1;
+  }
+  return 0;
+}
+
+int do_device_post(struct pci_device *dev, int has_arb)
+{
+	int error = 0;
+	/* need to pull the ROM file */
 	unsigned int pci_id;
-	int error;
+	int ret;	
 
-	pci_scan_bus(pacc);
-
-	for (p = pacc->devices; p; p = p->next) {
-		c = pci_read_word(p, PCI_CLASS_DEVICE);
-		if (c == 0x300) {
-			pci_id =
-			    (p->bus << 8) + (p->dev << 3) +
-			    (p->func & 0x7);
-			error = do_real_post(pci_id);
-			if (error != 0) {
-				return error;
-			}
+#ifdef HAVE_PCI_DEVICE_VGAARB_INIT
+	if (has_arb) {
+		pci_device_vgaarb_set_target(dev);
+		pci_device_vgaarb_lock();
+		pci_device_enable(dev);
+	
+		ret = pci_device_read_rom(dev, romfile);
+		if (ret) {
+			pci_device_vgaarb_unlock();
+			fprintf(stderr,"rom read returned %d\n", ret);
+			return 0;
 		}
+
+		memcpy(rom_cseg, romfile, MAX_ROMSIZE);
 	}
+#endif
+	pci_id = (dev->bus << 8) + (dev->dev << 3) +
+		    (dev->func & 0x7);
+	error = do_real_post(pci_id);
+#ifdef HAVE_PCI_DEVICE_VGAARB_INIT
+	if (has_arb)
+		pci_device_vgaarb_unlock();
+#endif
+	return error;
+}
+
+/* 0000:01:0a.0 */
+int pci_str_to_info(char *pci_string, struct pci_slot_match *match)
+{
+	int dom, bus, dev, func;
+	char *tok;
+
+	tok = strtok(pci_string, ":");
+	if (!tok)
+		return -1;
+
+	dom = strtoul(tok, NULL, 16);
+	tok = strtok(NULL, ":");
+	if (!tok)
+		return -1;
+	bus = strtoul(tok, NULL, 16);
+	tok = strtok(NULL, ".");
+	if (!tok)
+		return -1;
+	dev = strtoul(tok, NULL, 16);
+	tok = strtok(NULL, ".");
+	if (!tok)
+		return -1;
+	func = strtoul(tok, NULL, 16);
+	
+	match->domain = dom;
+	match->bus = bus;
+	match->dev = dev;
+	match->func = func;
+	return 0;
+}
+
+#ifdef HAVE_PCI_DEVICE_VGAARB_INIT
+int do_udev_post(char *pci_string)
+{
+	struct pci_slot_match match;
+	int is_boot;
+	int error;
+	struct pci_device *dev;
+
+	error = pci_device_vgaarb_init();
+	if (error)
+		return -1;
+
+	if (setup_rom_section())
+  		return -1;
+
+	/* parse the PCI string */
+	error = pci_str_to_info(pci_string, &match);
+	if (error)
+		return -1;
+
+	dev = pci_device_find_by_slot(match.domain, match.bus,
+			match.dev, match.func);
+	if (!dev)
+		return -1;
+	
+	error = pci_device_probe(dev);
+	if (error)
+		return -1;
+	is_boot = pci_device_is_boot_vga(dev);
+	if (is_boot)
+		return 0;
+	if (pci_device_has_kernel_driver(dev))
+		return 0;
+	error = do_device_post(dev, 1);
+	if (error)
+		return error;
+	pci_device_vgaarb_set_target(NULL);
+	pci_device_vgaarb_lock();
+	pci_device_vgaarb_unlock();
+	pci_device_vgaarb_fini();
+	return 0;
+}
+#endif
+
+int do_post(int boot_flag)
+{
+	int error;
+	struct pci_id_match dev_match = {
+	PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY,
+	(0x03 << 16), 0xff000, 0 };
+	struct pci_device *dev, *first_dev = NULL;
+	struct pci_device_iterator *iter;
+	int has_arb = 1;
+	int ret;
+
+#ifdef HAVE_PCI_DEVICE_VGAARB_INIT
+	ret = pci_device_vgaarb_init();
+	if (ret)
+		has_arb = 0;
+
+	if (has_arb)
+		if (setup_rom_section())
+	  		return -1;
+#else
+	if (boot_flag == 1)
+		return -1;
+	has_arb = 0;
+#endif
+
+	iter = pci_id_match_iterator_create(&dev_match);
+	if (iter == NULL) {
+		return 1;
+	}
+
+	while ((dev = pci_device_next(iter)) != NULL) {
+		int is_boot = pci_device_is_boot_vga(dev);
+		if (!first_dev)
+			first_dev = dev;
+
+		if (!is_boot && !has_arb)
+			continue;
+
+		if (is_boot && boot_flag) {
+			continue;
+		}
+#ifdef HAVE_PCI_DEVICE_VGAARB_INIT
+		if (pci_device_has_kernel_driver(dev)) {
+			continue;
+		}
+#endif
+		error = do_device_post(dev, has_arb);
+		if (error)
+			return error;
+	}
+	pci_iterator_destroy(iter);
+#ifdef HAVE_PCI_DEVICE_VGAARB_INIT
+	if (has_arb) {
+		pci_device_vgaarb_set_target(first_dev);
+		pci_device_vgaarb_lock();
+		pci_device_vgaarb_unlock();
+		pci_device_vgaarb_fini();
+	}
+#endif
 	return 0;
 }
 
@@ -529,7 +715,7 @@ int do_get_panel_id(int just_dimensions)
   r.edi = (unsigned long)(id-LRMI_base_addr()) & 0xf;
 
   if(sizeof(struct panel_id) != 32)
-    return fprintf(stderr, "oops: panel_id, sizeof struct panel_id != 32, it's %ld...\n", sizeof(struct panel_id)), 7;
+    return fprintf(stderr, "oops: panel_id, sizeof struct panel_id != 32, it's %d...\n", sizeof(struct panel_id)), 7;
 
   if(real_mode_int(0x10, &r))
     return fprintf(stderr, "Can't get panel id (vm86 failure)\n"), 8;
