@@ -40,6 +40,34 @@ version 2
 #define DPMS_STATE_OFF 0x0400
 #define DPMS_STATE_LOW 0x0800
 
+static int primary_gpu_has_kernel_driver(void)
+{
+	struct pci_id_match dev_match = {
+	PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY, PCI_MATCH_ANY,
+	(0x03 << 16), 0xff000, 0 };
+	struct pci_device *dev;
+	struct pci_device_iterator *iter;
+	int ret = 0;
+
+	iter = pci_id_match_iterator_create(&dev_match);
+	if (iter == NULL) {
+		return 1;
+	}
+
+	while ((dev = pci_device_next(iter)) != NULL) {
+		int is_boot = pci_device_is_boot_vga(dev);
+		if (!is_boot)
+			continue;
+
+		if (pci_device_has_kernel_driver(dev)) {
+			ret = 1;
+			break;
+		}
+	}
+	pci_iterator_destroy(iter);
+	return ret;
+}
+
 int vbetool_init (void) {
 	if (!LRMI_init()) {
 		fprintf(stderr, "Failed to initialise LRMI (Linux Real-Mode Interface).\n");
@@ -70,6 +98,10 @@ int main(int argc, char *argv[])
 			return err;
 		}
 
+		if (primary_gpu_has_kernel_driver()) {
+			fprintf(stderr,"no save or restore with kernel driver loaded\n");
+			return 0;
+		}
 		if (!strcmp(argv[2], "save")) {
 			save_state();
 		} else if (!strcmp(argv[2], "restore")) {
@@ -92,6 +124,12 @@ int main(int argc, char *argv[])
 			goto usage;
 		}
 	} else if (!strcmp(argv[1], "vbemode")) {
+
+		if (primary_gpu_has_kernel_driver()) {
+			fprintf(stderr,"no save or restore with kernel driver loaded\n");
+			return 0;
+		}
+
 		if (!strcmp(argv[2], "set")) {
 			return do_set_mode(atoi(argv[3]),0);
 		} else if (!strcmp(argv[2], "get")) {
@@ -100,6 +138,12 @@ int main(int argc, char *argv[])
 			goto usage;
 		}
 	} else if (!strcmp(argv[1], "vgamode")) {
+
+		if (primary_gpu_has_kernel_driver()) {
+			fprintf(stderr,"no save or restore with kernel driver loaded\n");
+			return 0;
+		}
+
 		if (!strcmp(argv[2], "set")) {
 			return do_set_mode(atoi(argv[3]),1);
 		} else {
@@ -149,6 +193,12 @@ int main(int argc, char *argv[])
 		return -1;
 #endif
 	} else if (!strcmp(argv[1], "vgastate")) {
+
+		if (primary_gpu_has_kernel_driver()) {
+			fprintf(stderr,"no save or restore with kernel driver loaded\n");
+			return 0;
+		}
+
 		if (!strcmp(argv[2], "on")) {
 			return enable_vga();
 		} else {

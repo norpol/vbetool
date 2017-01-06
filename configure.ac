@@ -22,7 +22,7 @@ dnl
 dnl Process this file with autoconf to create configure.
 
 AC_PREREQ(2.57)
-AC_INIT([vbetool], 1.2.1, [not yet], vbetool)
+AC_INIT([vbetool], 1.2.2, [not yet], vbetool)
 AM_INIT_AUTOMAKE([dist-bzip2])
 AM_MAINTAINER_MODE
 
