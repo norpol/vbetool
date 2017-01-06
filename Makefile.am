@@ -8,7 +8,7 @@ man_MANS = vbetool.1
 vbetool_SOURCES = vbetool.c $(x86)
 noinst_HEADERS = vbetool.h
 
-EXTRA_DIST = vbetool.1
+EXTRA_DIST = vbetool.1 udev-video-post-example.rules
 
 maintainer-clean-local: 
 	$(RM) Makefile.in aclocal.m4 config.h.in stamp-h.in configure
