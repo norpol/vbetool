@@ -1,0 +1,51 @@
+This package was debianized by Matthew Garrett <mjg59@srcf.ucam.org> on
+Thu, 30 Dec 2004 15:16:39 +0000.
+
+It was downloaded from http://www.srcf.ucam.org/~mjg59/vbetool/
+
+Copyright:
+
+Copyright Matthew Garrett <mjg59@srcf.ucam.org>, heavily based on
+vbetest.c from the lrmi package and read-edid.c by John Fremlin
+
+This program is released under the terms of the GNU General Public License,
+version 2
+
+lrmi.c is Copyright (C) 1998 by Josh Vanderhoof
+
+x86emu is Copyright (C) 1996-1999 SciTech Software, Inc., Copyright
+(C) David Mosberger-Tang and Copyright (C) 1999 Egbert Eich
+
+Upstream Author: Matthew Garrett <mjg59@srcf.ucam.org>
+
+License:
+
+vbetool is released under the terms of the GNU General Public License version 2
+
+On Debian systems, the complete text of the GNU General Public
+License can be found in the file '/usr/share/common-licenses/GPL'
+
+lrmi.c
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+x86emu
+
+Permission to use, copy, modify, distribute, and sell this software and
+its documentation for any purpose is hereby granted without fee,
+provided that the above copyright notice appear in all copies and that
+both that copyright notice and this permission notice appear in
+supporting documentation, and that the name of the authors not be used
+in advertising or publicity pertaining to distribution of the software
+without specific, written prior permission.  The authors makes no
+representations about the suitability of this software for any purpose.
+It is provided "as is" without express or implied warranty.

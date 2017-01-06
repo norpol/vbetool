@@ -1,0 +1,17 @@
+
+dnl Process this file with autoconf to produce a configure script.
+ 
+AC_INIT(vbetool.c)
+AM_INIT_AUTOMAKE(vbetool, 0.3)
+
+dnl Checks for programs
+
+AC_PROG_CC
+
+dnl Simple, huh?
+
+AC_ARG_WITH([x86emu], AC_HELP_STRING([--with-x86emu],[build with x86emu support]), [USEX86EMU=true])
+
+AM_CONDITIONAL(WITH_X86EMU, test x$USEX86EMU = xtrue)
+
+AC_OUTPUT([Makefile])

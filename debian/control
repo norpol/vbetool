@@ -1,0 +1,14 @@
+Source: vbetool
+Section: utils
+Priority: optional
+Maintainer: Matthew Garrett <mjg59@ubuntu.com>
+Build-Depends: debhelper (>= 4.0.0), libx86-dev, pciutils-dev, zlib1g-dev
+Standards-Version: 3.6.1
+
+Package: vbetool
+Architecture: any 
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: run real-mode video BIOS code to alter hardware state
+ vbetool uses lrmi in order to run code from the video BIOS. Currently, 
+ it is able to alter DPMS states, save/restore video card state and 
+ attempt to initialize the video card from scratch.

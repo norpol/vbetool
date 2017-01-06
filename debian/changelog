@@ -1,0 +1,69 @@
+vbetool (1.0-0ubuntu1) feisty; urgency=low
+
+  * Move to using libx86
+
+ -- Matthew Garrett <mjg59@srcf.ucam.org>  Fri,  2 Mar 2007 13:10:22 +0000
+
+vbetool (0.7-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Add zlib1g-dev to Build-Depends and -lz to LDFLAGS, as needed by newer
+    pciutils (closes: #396844).
+
+ -- Julien Cristau <julien.cristau@ens-lyon.org>  Mon, 27 Nov 2006 03:43:37 +0100
+
+vbetool (0.7-1) unstable; urgency=low
+
+  * Add copyright information. Closes: #375159
+  * Apply splitup patches to allow vbetool to be linked into S2ram 
+    binary (from Pavel Machek)
+  * Fix build for systems that don't use /usr/lib (from Stefan Seyfried)
+  * Increase size of mapped real-mode memory (from Bart Oldeman)
+
+ -- Matthew Garrett <mjg59@srcf.ucam.org>  Wed, 26 Jul 2006 02:19:49 +0100
+
+vbetool (0.6-1.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Build with static libpci.a since the dynamic one is deprecated. Closes: #374730
+
+ -- Raphael Hertzog <hertzog@debian.org>  Fri, 30 Jun 2006 22:05:31 +0200
+
+vbetool (0.6-1) unstable; urgency=low
+
+  * Add support for parts of the VESA flat panel extension
+
+ -- Paul Sladen <debian@paul.sladen.org>  Wed, 15 Mar 2006 21:32:35 +0000
+
+vbetool (0.5-1) unstable; urgency=low
+
+  * Fix non-i386 build issues
+
+ -- Matthew Garrett <mjg59@srcf.ucam.org>  Wed, 30 Nov 2005 00:05:06 +0000
+
+vbetool (0.4-1) unstable; urgency=low
+
+  * New upstream version. Adds x86emu support for non-x86 support
+  * Compatibility with Linux 2.6.15 - may result in random breakage
+    since it now has the ability to write to RAM the kernel may be using
+
+ -- Matthew Garrett <mjg59@srcf.ucam.org>  Wed, 23 Nov 2005 02:56:04 +0000
+
+vbetool (0.3-1) unstable; urgency=low
+
+  * New upstream version. Adds legacy VGA enabling/disabling
+
+ -- Matthew Garrett <mjg59@srcf.ucam.org>  Wed,  2 Mar 2005 01:47:01 +0000
+
+vbetool (0.2-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Matthew Garrett <mjg59@srcf.ucam.org>  Fri, 31 Dec 2004 15:27:35 +0000
+
+vbetool (0.1-1) unstable; urgency=low
+
+  * Initial Release. Closes: #284909
+
+ -- Matthew Garrett <mjg59@srcf.ucam.org>  Thu, 30 Dec 2004 15:16:39 +0000
+
