@@ -20,6 +20,8 @@ version 2
 #include <sys/kd.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 
 #include <libx86.h>
 #include "vbetool.h"
@@ -42,7 +44,6 @@ int vbetool_init (void) {
 		exit(1);
 	}
 	
-	ioperm(0, 1024, 1);
 	iopl(3);
 	
 	pacc = pci_alloc();
@@ -112,6 +113,16 @@ int main(int argc, char *argv[])
 			return err;
 		}
 
+		if (argc >= 3) {
+			void *rc;
+			int romfd = open (argv[2], O_RDWR);
+
+			munmap(0xc0000, 64*1024);
+			rc = mmap(0xc0000, 64*1024,
+				  PROT_READ|PROT_WRITE|PROT_EXEC,
+				  MAP_FIXED|MAP_PRIVATE, romfd, 0);
+		}
+
 		return do_post();
 	} else if (!strcmp(argv[1], "vgastate")) {
 		if (!strcmp(argv[2], "on")) {
@@ -136,7 +147,7 @@ int main(int argc, char *argv[])
 	} else {
 	      usage:
 		fprintf(stderr,
-			"%s: Usage %s [[vbestate save|restore]|[vbemode set|get]|[vgamode]|[dpms on|off|standby|suspend|reduced]|[post]|[vgastate on|off]|[vbefp panelid|panelsize|getbrightness|setbrightness|invert]]\n",
+			"%s: Usage %s [[vbestate save|restore]|[vbemode set|get]|[vgamode]|[dpms on|off|standby|suspend|reduced]|[post [romfile]]|[vgastate on|off]|[vbefp panelid|panelsize|getbrightness|setbrightness|invert]]\n",
 			argv[0], argv[0]);
 		return 1;
 	}
@@ -345,9 +356,11 @@ void save_state(void)
 {
 	int size;
 	char *buffer = __save_state(&size);
+	ssize_t num_written;
 
 	if (buffer)
-		write(1, buffer, size);	/* FIXME: should retry on short write); */
+		/* FIXME: should retry on short write); */
+		num_written = write(1, buffer, size);
 }
 
 int do_blank(int state)

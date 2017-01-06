@@ -3,7 +3,7 @@
 vbetool - run real-mode video BIOS code to alter hardware state
 
 .SH SYNOPSIS
-.B "vbetool [[vbestate save|restore]|[vbemode set|get]|[vgamode]|[dpms on|off|standby|suspend|reduced]|[post]|[vgastate on|off]|[vbefp panelid|panelsize|getbrightness|setbrightness|invert]]"
+.B "vbetool [[vbestate save|restore]|[vbemode set|get]|[vgamode]|[dpms on|off|standby|suspend|reduced]|[post [romfile]]|[vgastate on|off]|[vbefp panelid|panelsize|getbrightness|setbrightness|invert]]"
 
 .SH DESCRIPTION
 .B vbetool
@@ -46,7 +46,9 @@ hardware. Note that on some machines (especially laptops), not all of
 this code is present after system boot - as a result, executing this
 command may result in undefined behaviour. This command must be run
 from a text console, as it will otherwise interfere with the operation
-of X.
+of X. This command takes an optional argument which is the location of
+a file containing a ROM image. If provided, this image will be mapped
+to the c000 segment and used instead of the system's video BIOS.
 
 .IP "vgastate"
 .B vbetool

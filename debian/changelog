@@ -1,6 +1,20 @@
+vbetool (1.1-0) hardy; urgency=low
+
+  * Add support for POSTing from external ROM files
+  * Remove ioperm call - it's redundant with the iopl after it
+
+ -- Matthew Garrett <mjg59@srcf.ucam.org>  Fri, 16 May 2008 13:47:17 +0100
+
+vbetool (1.0-1.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * New release taken from Ubuntu (Closes: #443568)
+
+ -- Philipp Kern <pkern@debian.org>  Sat, 01 Dec 2007 09:29:36 +0100
+
 vbetool (1.0-0ubuntu1) feisty; urgency=low
 
-  * Move to using libx86
+  * Move to using libx86 (Closes: #420279)
 
  -- Matthew Garrett <mjg59@srcf.ucam.org>  Fri,  2 Mar 2007 13:10:22 +0000
 
